@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantEdge — Stock Screener</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #C9A84C;
+  --gold-light: #E8C97A;
+  --gold-dim: #8A6E30;
+  --ink: #0A0A0C;
+  --ink2: #111114;
+  --ink3: #1A1A1E;
+  --ink4: #222226;
+  --muted: #5A5A62;
+  --muted2: #3A3A42;
+  --line: rgba(201,168,76,0.12);
+  --line2: rgba(201,168,76,0.06);
+  --text: #D4D0C8;
+  --text2: #8A8880;
+  --text-bright: #F0EAD6;
+  --green: #4ADE80;
+  --green-dim: rgba(74,222,128,0.12);
+  --blue: #60A5FA;
+  --blue-dim: rgba(96,165,250,0.12);
+  --red: #F87171;
+  --red-dim: rgba(248,113,113,0.12);
+  --purple: #A78BFA;
+  --purple-dim: rgba(167,139,250,0.12);
+  --teal: #2DD4BF;
+  --teal-dim: rgba(45,212,191,0.12);
+  --orange: #FB923C;
+  --orange-dim: rgba(251,146,60,0.12);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  --transition: all 0.2s ease;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ─── SCROLLBAR ───────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--ink2); }
+::-webkit-scrollbar-thumb { background: var(--muted2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+
+/* ─── SIDEBAR ─────────────────────────────── */
+.sidebar {
+  position: fixed;
+  top: 0; left: 0;
+  width: 260px;
+  height: 100vh;
+  background: var(--ink2);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  transition: var(--transition);
+}
+
+.sidebar-brand {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sidebar-brand h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--text-bright);
+  letter-spacing: -0.02em;
+}
+
+.sidebar-brand h1 span { color: var(--gold); }
+
+.sidebar-brand p {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 16px 12px;
+  overflow-y: auto;
+}
+
+.nav-section {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 16px 12px 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 14px;
+  color: var(--text2);
+  text-decoration: none;
+  margin-bottom: 2px;
+}
+
+.nav-item:hover { background: var(--ink3); color: var(--text); }
+.nav-item.active { background: rgba(201,168,76,0.08); color: var(--gold); }
+.nav-item .icon { font-size: 18px; width: 24px; text-align: center; }
+
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--line);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* ─── MAIN CONTENT ────────────────────────── */
+.main {
+  margin-left: 260px;
+  min-height: 100vh;
+}
+
+/* ─── TOP BAR ─────────────────────────────── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background: rgba(10,10,12,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--line);
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ink3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  width: 400px;
+  transition: var(--transition);
+}
+
+.search-box:focus-within { border-color: var(--gold); }
+
+.search-box input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  width: 100%;
+}
+
+.search-box input::placeholder { color: var(--muted); }
+.search-icon { color: var(--muted); font-size: 16px; }
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ─── BUTTONS ─────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--ink3);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+}
+
+.btn:hover { border-color: var(--gold-dim); background: var(--ink4); }
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+  border-color: var(--gold);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.btn-gold:hover { opacity: 0.9; background: var(--gold); }
+
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+
+.btn-danger { border-color: rgba(248,113,113,0.3); color: var(--red); }
+.btn-danger:hover { background: var(--red-dim); }
+
+/* ─── PAGE CONTENT ────────────────────────── */
+.page { display: none; padding: 32px; }
+.page.active { display: block; }
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.page-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ─── STAT CARDS ──────────────────────────── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: var(--ink2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+
+.stat-card.gold::before { background: var(--gold); }
+.stat-card.green::before { background: var(--green); }
+.stat-card.blue::before { background: var(--blue); }
+.stat-card.purple::before { background: var(--purple); }
+.stat-card.red::before { background: var(--red); }
+.stat-card.teal::before { background: var(--teal); }
+
+.stat-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-bright);
+  line-height: 1;
+}
+
+.stat-change {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.stat-change.up { color: var(--green); }
+.stat-change.down { color: var(--red); }
+
+/* ─── CARDS & PANELS ──────────────────────── */
+.card {
+  background: var(--ink2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line2);
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.card-body { padding: 24px; }
+
+/* ─── DATA TABLE ──────────────────────────── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: var(--ink2);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.data-table th:hover { color: var(--gold); }
+
+.data-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line2);
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.data-table tr { transition: var(--transition); }
+.data-table tbody tr:hover { background: rgba(201,168,76,0.04); }
+.data-table tbody tr.multibagger { background: rgba(201,168,76,0.06); }
+
+/* ─── TAGS / BADGES ───────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.badge-gold { background: rgba(201,168,76,0.15); color: var(--gold); }
+.badge-green { background: var(--green-dim); color: var(--green); }
+.badge-red { background: var(--red-dim); color: var(--red); }
+.badge-blue { background: var(--blue-dim); color: var(--blue); }
+.badge-purple { background: var(--purple-dim); color: var(--purple); }
+.badge-teal { background: var(--teal-dim); color: var(--teal); }
+.badge-orange { background: var(--orange-dim); color: var(--orange); }
+
+/* ─── SCORE BAR ───────────────────────────── */
+.score-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--ink4);
+  border-radius: 3px;
+  overflow: hidden;
+  max-width: 80px;
+}
+
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.score-bar-fill.high { background: var(--green); }
+.score-bar-fill.mid { background: var(--gold); }
+.score-bar-fill.low { background: var(--red); }
+
+.score-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  min-width: 35px;
+  text-align: right;
+}
+
+/* ─── STOCK DETAIL MODAL ──────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--ink2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 900px;
+  box-shadow: var(--shadow);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-close {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--muted);
+  width: 36px; height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: var(--transition);
+}
+
+.modal-close:hover { border-color: var(--red); color: var(--red); }
+
+.modal-body { padding: 28px; }
+
+/* ─── FUNDAMENTAL GRID ────────────────────── */
+.fund-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.fund-item {
+  padding: 16px;
+  background: var(--ink3);
+  border: 1px solid var(--line2);
+  border-radius: var(--radius-sm);
+}
+
+.fund-item .label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.fund-item .value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+/* ─── RULE CHIPS ──────────────────────────── */
+.rule-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rule-chip {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+
+.rule-chip.pass {
+  background: var(--green-dim);
+  border-color: rgba(74,222,128,0.25);
+  color: var(--green);
+}
+
+.rule-chip.fail {
+  background: var(--red-dim);
+  border-color: rgba(248,113,113,0.2);
+  color: var(--red);
+}
+
+/* ─── LOADING ─────────────────────────────── */
+.loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10,10,12,0.85);
+  backdrop-filter: blur(12px);
+  z-index: 300;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+}
+
+.loading-overlay.active { display: flex; }
+
+.spinner {
+  width: 48px; height: 48px;
+  border: 3px solid var(--ink3);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+}
+
+.loading-sub {
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 400px;
+  text-align: center;
+}
+
+/* ─── EMPTY STATE ─────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--muted);
+}
+
+.empty-state .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+.empty-state h3 { font-size: 18px; color: var(--text2); margin-bottom: 8px; }
+.empty-state p { font-size: 14px; max-width: 400px; margin: 0 auto 24px; }
+
+/* ─── SCORE CIRCLE ────────────────────────── */
+.score-circle {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1;
+  border: 3px solid;
+}
+
+.score-circle small {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
+.score-circle.high { border-color: var(--green); color: var(--green); }
+.score-circle.mid { border-color: var(--gold); color: var(--gold); }
+.score-circle.low { border-color: var(--red); color: var(--red); }
+
+/* ─── GRID LAYOUTS ────────────────────────── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+/* ─── TOAST ───────────────────────────────── */
+.toast-container {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  background: var(--ink3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px 20px;
+  font-size: 13px;
+  color: var(--text);
+  box-shadow: var(--shadow);
+  animation: slideIn 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toast.success { border-left: 3px solid var(--green); }
+.toast.error { border-left: 3px solid var(--red); }
+.toast.info { border-left: 3px solid var(--blue); }
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ─── RESPONSIVE ──────────────────────────── */
+@media (max-width: 1024px) {
+  .sidebar { width: 220px; }
+  .main { margin-left: 220px; }
+  .fund-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .search-box { width: 200px; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .two-col, .three-col { grid-template-columns: 1fr; }
+  .fund-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <h1>Quant<span>Edge</span></h1>
+    <p>Stock Screener v1.0</p>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Main</div>
+    <a class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+      <span class="icon">📊</span> Dashboard
+    </a>
+    <a class="nav-item" data-page="screener" onclick="showPage('screener')">
+      <span class="icon">🔍</span> Screener
+    </a>
+    <a class="nav-item" data-page="multibaggers" onclick="showPage('multibaggers')">
+      <span class="icon">🚀</span> Multibaggers
+    </a>
+    <div class="nav-section">Analysis</div>
+    <a class="nav-item" data-page="stock-detail" onclick="showPage('stock-detail')">
+      <span class="icon">📈</span> Stock Analysis
+    </a>
+    <a class="nav-item" data-page="backtest" onclick="showPage('backtest')">
+      <span class="icon">⏪</span> Backtester
+    </a>
+    <div class="nav-section">Settings</div>
+    <a class="nav-item" data-page="settings" onclick="showPage('settings')">
+      <span class="icon">⚙️</span> Configuration
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div>NSE / BSE India</div>
+    <div style="margin-top:4px; color: var(--gold);" id="status-dot">● Connected</div>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="search-box">
+      <span class="search-icon">🔎</span>
+      <input type="text" id="search-input" placeholder="Search stock... (e.g. RELIANCE, TCS, INFY)" onkeydown="if(event.key==='Enter') analyzeFromSearch()">
+    </div>
+    <div class="topbar-actions">
+      <button class="btn" onclick="runScreener(false)">
+        <span>▶</span> Run Nifty 50
+      </button>
+      <button class="btn btn-gold" onclick="runScreener(true)">
+        <span>⚡</span> Run Nifty 200
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══ DASHBOARD PAGE ═══ -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Dashboard</div>
+        <div class="page-subtitle">Overview of the latest screener run</div>
+      </div>
+      <div id="last-run-time" class="badge badge-gold" style="display:none"></div>
+    </div>
+
+    <div class="stat-grid" id="dashboard-stats">
+      <div class="stat-card gold">
+        <div class="stat-label">Stocks Screened</div>
+        <div class="stat-value" id="stat-total">—</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Above Threshold</div>
+        <div class="stat-value" id="stat-above">—</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-label">Multibagger Candidates</div>
+        <div class="stat-value" id="stat-mb">—</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">Avg Composite Score</div>
+        <div class="stat-value" id="stat-avg">—</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-label">Top Score</div>
+        <div class="stat-value" id="stat-top-score">—</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-label">Avg RSI</div>
+        <div class="stat-value" id="stat-avg-rsi">—</div>
+      </div>
+    </div>
+
+    <!-- Top Picks Table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🏆 Top Picks</div>
+        <div style="display:flex; gap:8px">
+          <button class="btn btn-sm" onclick="exportCSV()">📥 Export CSV</button>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table class="data-table" id="top-picks-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th onclick="sortTable('symbol')">Symbol ↕</th>
+              <th onclick="sortTable('composite_score')">Score ↕</th>
+              <th onclick="sortTable('technical_score')">Technical ↕</th>
+              <th onclick="sortTable('fundamental_score')">Fundamental ↕</th>
+              <th onclick="sortTable('current_price')">Price ↕</th>
+              <th>SL / Target</th>
+              <th onclick="sortTable('rsi')">RSI ↕</th>
+              <th>Sector</th>
+              <th>Badge</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="top-picks-body">
+          </tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="dashboard-empty">
+        <div class="icon">📡</div>
+        <h3>No Data Yet</h3>
+        <p>Click "Run Nifty 50" or "Run Nifty 200" to start screening stocks.</p>
+        <button class="btn btn-gold" onclick="runScreener(false)">⚡ Run Screener</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SCREENER PAGE ═══ -->
+  <div class="page" id="page-screener">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Full Screener Results</div>
+        <div class="page-subtitle">All stocks with complete technical + fundamental scoring</div>
+      </div>
+      <div style="display:flex; gap:8px">
+        <select id="sector-filter" class="btn btn-sm" onchange="filterResults()" style="background:var(--ink3);color:var(--text);border:1px solid var(--line);">
+          <option value="">All Sectors</option>
+        </select>
+        <select id="score-filter" class="btn btn-sm" onchange="filterResults()" style="background:var(--ink3);color:var(--text);border:1px solid var(--line);">
+          <option value="0">Min Score: 0</option>
+          <option value="5">Min Score: 5</option>
+          <option value="8">Min Score: 8</option>
+          <option value="10">Min Score: 10</option>
+          <option value="12" selected>Min Score: 12</option>
+          <option value="15">Min Score: 15</option>
+        </select>
+      </div>
+    </div>
+    <div class="card">
+      <div style="overflow-x: auto; max-height: 70vh; overflow-y: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Symbol</th>
+              <th>Name</th>
+              <th>Composite</th>
+              <th>Tech</th>
+              <th>Fund</th>
+              <th>Price</th>
+              <th>RSI</th>
+              <th>P/E</th>
+              <th>ROE</th>
+              <th>Rev Growth</th>
+              <th>Sector</th>
+              <th>MB?</th>
+            </tr>
+          </thead>
+          <tbody id="screener-body"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="screener-empty">
+        <div class="icon">🔍</div>
+        <h3>Run the Screener First</h3>
+        <p>After running, all results will appear here with filters.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MULTIBAGGERS PAGE ═══ -->
+  <div class="page" id="page-multibaggers">
+    <div class="page-header">
+      <div>
+        <div class="page-title">🚀 Multibagger Candidates</div>
+        <div class="page-subtitle">Stocks passing BOTH high technical score AND strong fundamental filters</div>
+      </div>
+    </div>
+    <div class="callout" style="background: #1A1608; border-left: 3px solid var(--gold); padding: 16px 20px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 13px; color: var(--text2);">
+      <strong style="color:var(--gold)">Multibagger Criteria:</strong> Revenue Growth >15% · Profit Margin >10% · ROE >15% · Debt/Equity <0.5 · PEG <1.5 · Earnings Growth >20% · Market Cap >₹500Cr · P/E <40
+    </div>
+    <div id="multibagger-cards" class="stat-grid" style="grid-template-columns: repeat(auto-fill, minmax(350px, 1fr))"></div>
+    <div class="empty-state" id="mb-empty">
+      <div class="icon">🚀</div>
+      <h3>No Multibaggers Found Yet</h3>
+      <p>Run the screener to identify multibagger candidates based on combined technical + fundamental analysis.</p>
+    </div>
+  </div>
+
+  <!-- ═══ STOCK DETAIL PAGE ═══ -->
+  <div class="page" id="page-stock-detail">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Stock Analysis</div>
+        <div class="page-subtitle">Deep dive into a single stock</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="detail-symbol-input" placeholder="Enter symbol (e.g. RELIANCE)"
+               style="background:var(--ink3);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 16px;color:var(--text);font-family:'DM Sans';font-size:14px;width:250px;outline:none;"
+               onkeydown="if(event.key==='Enter') analyzeStock()">
+        <button class="btn btn-gold" onclick="analyzeStock()">Analyze</button>
+      </div>
+    </div>
+    <div id="stock-detail-content"></div>
+    <div class="empty-state" id="detail-empty">
+      <div class="icon">📈</div>
+      <h3>Enter a Stock Symbol</h3>
+      <p>Type a symbol like RELIANCE, TCS, or INFY and click Analyze for a full breakdown.</p>
+    </div>
+  </div>
+
+  <!-- ═══ BACKTEST PAGE ═══ -->
+  <div class="page" id="page-backtest">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Backtester</div>
+        <div class="page-subtitle">Test your strategy on historical data before risking real money</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-body">
+        <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;">
+          <div>
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Symbol</label>
+            <input type="text" id="bt-symbol" placeholder="RELIANCE" value="RELIANCE"
+                   style="background:var(--ink3);border:1px solid var(--line);border-radius:var(--radius-xs);padding:10px 14px;color:var(--text);font-family:'DM Sans';font-size:13px;width:160px;outline:none;">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Start Date</label>
+            <input type="date" id="bt-start" value="2022-01-01"
+                   style="background:var(--ink3);border:1px solid var(--line);border-radius:var(--radius-xs);padding:10px 14px;color:var(--text);font-family:'DM Sans';font-size:13px;width:160px;outline:none;">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Stop Loss %</label>
+            <input type="number" id="bt-sl" value="5" min="1" max="20" step="0.5"
+                   style="background:var(--ink3);border:1px solid var(--line);border-radius:var(--radius-xs);padding:10px 14px;color:var(--text);font-family:'DM Sans';font-size:13px;width:100px;outline:none;">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Target %</label>
+            <input type="number" id="bt-target" value="15" min="1" max="50" step="0.5"
+                   style="background:var(--ink3);border:1px solid var(--line);border-radius:var(--radius-xs);padding:10px 14px;color:var(--text);font-family:'DM Sans';font-size:13px;width:100px;outline:none;">
+          </div>
+          <button class="btn btn-gold" onclick="runBacktest()">⏪ Run Backtest</button>
+        </div>
+      </div>
+    </div>
+    <div id="backtest-results"></div>
+    <div class="empty-state" id="bt-empty">
+      <div class="icon">⏪</div>
+      <h3>Configure & Run</h3>
+      <p>Set your parameters above and run a backtest to see historical performance.</p>
+    </div>
+  </div>
+
+  <!-- ═══ SETTINGS PAGE ═══ -->
+  <div class="page" id="page-settings">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Configuration</div>
+        <div class="page-subtitle">System settings and thresholds</div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Technical Thresholds</div></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <div class="fund-item"><div class="label">SMA Periods</div><div class="value" style="font-size:14px;color:var(--text)">20 / 50 / 200</div></div>
+            <div class="fund-item"><div class="label">RSI Period</div><div class="value" style="font-size:14px;color:var(--text)">14</div></div>
+            <div class="fund-item"><div class="label">RSI Sweet Spot</div><div class="value" style="font-size:14px;color:var(--text)">40 – 65</div></div>
+            <div class="fund-item"><div class="label">MACD (Fast/Slow/Signal)</div><div class="value" style="font-size:14px;color:var(--text)">12 / 26 / 9</div></div>
+            <div class="fund-item"><div class="label">Bollinger Band</div><div class="value" style="font-size:14px;color:var(--text)">20 period, 2σ</div></div>
+            <div class="fund-item"><div class="label">Volume Spike Threshold</div><div class="value" style="font-size:14px;color:var(--text)">1.5x avg</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Multibagger Criteria</div></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <div class="fund-item"><div class="label">Min Revenue Growth</div><div class="value" style="font-size:14px;color:var(--green)">15% YoY</div></div>
+            <div class="fund-item"><div class="label">Min Profit Margin</div><div class="value" style="font-size:14px;color:var(--green)">10%</div></div>
+            <div class="fund-item"><div class="label">Min ROE</div><div class="value" style="font-size:14px;color:var(--green)">15%</div></div>
+            <div class="fund-item"><div class="label">Max Debt-to-Equity</div><div class="value" style="font-size:14px;color:var(--gold)">0.5</div></div>
+            <div class="fund-item"><div class="label">Max PEG Ratio</div><div class="value" style="font-size:14px;color:var(--gold)">1.5</div></div>
+            <div class="fund-item"><div class="label">Min Market Cap</div><div class="value" style="font-size:14px;color:var(--blue)">₹500 Cr</div></div>
+            <div class="fund-item"><div class="label">Max P/E</div><div class="value" style="font-size:14px;color:var(--red)">40</div></div>
+            <div class="fund-item"><div class="label">Stop Loss</div><div class="value" style="font-size:14px;color:var(--red)">5% (hard)</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div> <!-- /main -->
+
+<!-- ═══ LOADING OVERLAY ═══ -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">RUNNING SCREENER...</div>
+  <div class="loading-sub" id="loading-sub">Fetching data, computing indicators, and scoring stocks. This may take a few minutes.</div>
+</div>
+
+<!-- ═══ TOAST CONTAINER ═══ -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// QuantEdge Frontend — JavaScript
+// ═══════════════════════════════════════════════
+
+const API = '';  // Same origin
+let allResults = [];
+let sortField = 'composite_score';
+let sortDir = -1;
+
+// ─── Navigation ──────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelector(`[data-page="${id}"]`)?.classList.add('active');
+}
+
+// ─── Toast Notifications ─────────────────────
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 5000);
+}
+
+// ─── Loading Overlay ─────────────────────────
+function showLoading(text, sub) {
+  document.getElementById('loading-text').textContent = text || 'PROCESSING...';
+  document.getElementById('loading-sub').textContent = sub || '';
+  document.getElementById('loading').classList.add('active');
+}
+
+function hideLoading() {
+  document.getElementById('loading').classList.remove('active');
+}
+
+// ─── Number Formatters ───────────────────────
+function fmtCr(val) {
+  if (!val) return 'N/A';
+  return '₹' + (val / 1e7).toLocaleString('en-IN', {maximumFractionDigits: 0}) + ' Cr';
+}
+
+function fmtPct(val) {
+  if (val === null || val === undefined) return 'N/A';
+  return (val * 100).toFixed(1) + '%';
+}
+
+function fmtNum(val, digits = 2) {
+  if (val === null || val === undefined) return 'N/A';
+  return Number(val).toFixed(digits);
+}
+
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function scoreClass(score, max) {
+  const pct = score / max;
+  if (pct >= 0.6) return 'high';
+  if (pct >= 0.35) return 'mid';
+  return 'low';
+}
+
+function scoreColor(score, max) {
+  const pct = score / max;
+  if (pct >= 0.6) return 'var(--green)';
+  if (pct >= 0.35) return 'var(--gold)';
+  return 'var(--red)';
+}
+
+// ─── Score Bar HTML ──────────────────────────
+function scoreBarHTML(score, max) {
+  const pct = Math.min(score / max * 100, 100);
+  const cls = scoreClass(score, max);
+  return `<div class="score-bar-wrap">
+    <div class="score-bar"><div class="score-bar-fill ${cls}" style="width:${pct}%"></div></div>
+    <span class="score-num" style="color:${scoreColor(score, max)}">${fmtNum(score,1)}/${max}</span>
+  </div>`;
+}
+
+// ═══ RUN SCREENER ════════════════════════════
+async function runScreener(nifty200 = false) {
+  const label = nifty200 ? 'Nifty 200' : 'Nifty 50';
+  showLoading(`SCREENING ${label.toUpperCase()}...`, `Fetching data for ${nifty200 ? '200' : '50'} stocks, computing indicators, and scoring. This takes a few minutes.`);
+  try {
+    const res = await fetch(`${API}/api/screener/run?nifty200=${nifty200}`);
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    allResults = data.results || [];
+    updateDashboard();
+    updateScreenerTable();
+    updateMultibaggers();
+    populateSectorFilter();
+    toast(`Screened ${data.total_screened} stocks successfully`, 'success');
+  } catch (e) {
+    toast(`Screener failed: ${e.message}`, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// ═══ UPDATE DASHBOARD ════════════════════════
+function updateDashboard() {
+  if (!allResults.length) return;
+  const above = allResults.filter(r => r.composite_score >= 12).length;
+  const mbs = allResults.filter(r => r.is_multibagger).length;
+  const avgScore = allResults.reduce((s, r) => s + r.composite_score, 0) / allResults.length;
+  const avgRsi = allResults.reduce((s, r) => s + (r.rsi || 0), 0) / allResults.length;
+
+  document.getElementById('stat-total').textContent = allResults.length;
+  document.getElementById('stat-above').textContent = above;
+  document.getElementById('stat-mb').textContent = mbs;
+  document.getElementById('stat-avg').textContent = avgScore.toFixed(1);
+  document.getElementById('stat-top-score').textContent = allResults[0]?.composite_score?.toFixed(1) || '—';
+  document.getElementById('stat-avg-rsi').textContent = avgRsi.toFixed(1);
+
+  document.getElementById('last-run-time').style.display = 'inline-flex';
+  document.getElementById('last-run-time').textContent = 'Last run: ' + new Date().toLocaleTimeString();
+
+  // Top picks table
+  const top = allResults.slice(0, 15);
+  const tbody = document.getElementById('top-picks-body');
+  tbody.innerHTML = top.map((r, i) => `
+    <tr class="${r.is_multibagger ? 'multibagger' : ''}" style="cursor:pointer" onclick="openStockDetail('${r.symbol}')">
+      <td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">${i + 1}</td>
+      <td style="font-weight:600;color:var(--text-bright)">${r.symbol}</td>
+      <td>${scoreBarHTML(r.composite_score, 20)}</td>
+      <td>${scoreBarHTML(r.technical_score, 10)}</td>
+      <td>${scoreBarHTML(r.fundamental_score, 10)}</td>
+      <td style="font-family:'DM Mono',monospace">₹${fmtNum(r.current_price)}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">
+        <span style="color:var(--red)">₹${r.stop_loss}</span> / <span style="color:var(--green)">₹${r.target}</span>
+      </td>
+      <td style="font-family:'DM Mono',monospace;color:${r.rsi > 65 ? 'var(--red)' : r.rsi < 40 ? 'var(--green)' : 'var(--gold)'}">${fmtNum(r.rsi)}</td>
+      <td><span class="badge badge-blue">${r.sector || 'N/A'}</span></td>
+      <td>${r.is_multibagger ? '<span class="badge badge-gold">🚀 MB</span>' : '<span class="badge" style="background:var(--ink3);color:var(--muted)">—</span>'}</td>
+      <td><button class="btn btn-sm" onclick="event.stopPropagation();openStockDetail('${r.symbol}')">View</button></td>
+    </tr>
+  `).join('');
+
+  document.getElementById('dashboard-empty').style.display = allResults.length ? 'none' : 'block';
+}
+
+// ═══ SCREENER TABLE ══════════════════════════
+function updateScreenerTable() {
+  const minScore = parseFloat(document.getElementById('score-filter').value) || 0;
+  const sector = document.getElementById('sector-filter').value;
+  let filtered = allResults.filter(r => r.composite_score >= minScore);
+  if (sector) filtered = filtered.filter(r => r.sector === sector);
+
+  const tbody = document.getElementById('screener-body');
+  tbody.innerHTML = filtered.map((r, i) => `
+    <tr class="${r.is_multibagger ? 'multibagger' : ''}" style="cursor:pointer" onclick="openStockDetail('${r.symbol}')">
+      <td style="color:var(--muted);font-size:11px">${i + 1}</td>
+      <td style="font-weight:600;color:var(--text-bright)">${r.symbol}</td>
+      <td style="font-size:12px;color:var(--muted)">${r.name || r.symbol}</td>
+      <td>${scoreBarHTML(r.composite_score, 20)}</td>
+      <td>${scoreBarHTML(r.technical_score, 10)}</td>
+      <td>${scoreBarHTML(r.fundamental_score, 10)}</td>
+      <td style="font-family:'DM Mono',monospace">₹${fmtNum(r.current_price)}</td>
+      <td style="font-family:'DM Mono',monospace">${fmtNum(r.rsi)}</td>
+      <td style="font-family:'DM Mono',monospace">${fmtNum(r.pe_ratio)}</td>
+      <td style="font-family:'DM Mono',monospace">${r.roe ? fmtPct(r.roe) : 'N/A'}</td>
+      <td style="font-family:'DM Mono',monospace">${r.revenue_growth ? fmtPct(r.revenue_growth) : 'N/A'}</td>
+      <td><span class="badge badge-blue">${r.sector || 'N/A'}</span></td>
+      <td>${r.is_multibagger ? '<span class="badge badge-gold">🚀</span>' : '—'}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('screener-empty').style.display = filtered.length ? 'none' : 'block';
+}
+
+function filterResults() { updateScreenerTable(); }
+
+function populateSectorFilter() {
+  const sectors = [...new Set(allResults.map(r => r.sector).filter(Boolean))].sort();
+  const sel = document.getElementById('sector-filter');
+  sel.innerHTML = '<option value="">All Sectors</option>' + sectors.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+// ═══ MULTIBAGGERS ════════════════════════════
+function updateMultibaggers() {
+  const mbs = allResults.filter(r => r.is_multibagger);
+  const container = document.getElementById('multibagger-cards');
+
+  if (!mbs.length) {
+    container.innerHTML = '';
+    document.getElementById('mb-empty').style.display = 'block';
+    return;
+  }
+  document.getElementById('mb-empty').style.display = 'none';
+
+  container.innerHTML = mbs.map(r => `
+    <div class="card" style="cursor:pointer;margin-bottom:0;" onclick="openStockDetail('${r.symbol}')">
+      <div class="card-header" style="padding:16px 20px">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:18px;font-weight:700;color:var(--text-bright)">${r.symbol}</span>
+            <span class="badge badge-gold">🚀 MULTIBAGGER</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${r.name || r.symbol} · ${r.sector}</div>
+        </div>
+        <div class="score-circle ${scoreClass(r.composite_score, 20)}">
+          ${r.composite_score.toFixed(1)} <small>/20</small>
+        </div>
+      </div>
+      <div class="card-body" style="padding:16px 20px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+          <div><div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:0.1em">PRICE</div><div style="font-size:16px;font-weight:600;color:var(--text-bright)">₹${fmtNum(r.current_price)}</div></div>
+          <div><div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:0.1em">ROE</div><div style="font-size:16px;font-weight:600;color:var(--green)">${r.roe ? fmtPct(r.roe) : 'N/A'}</div></div>
+          <div><div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:0.1em">REV GROWTH</div><div style="font-size:16px;font-weight:600;color:var(--green)">${r.revenue_growth ? fmtPct(r.revenue_growth) : 'N/A'}</div></div>
+          <div><div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:0.1em">P/E</div><div style="font-size:16px;font-weight:600;color:var(--blue)">${fmtNum(r.pe_ratio)}</div></div>
+          <div><div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:0.1em">PEG</div><div style="font-size:16px;font-weight:600;color:var(--gold)">${fmtNum(r.peg_ratio)}</div></div>
+          <div><div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:0.1em">MKT CAP</div><div style="font-size:16px;font-weight:600;color:var(--text)">${fmtCr(r.market_cap)}</div></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          ${scoreBarHTML(r.technical_score, 10)}
+          ${scoreBarHTML(r.fundamental_score, 10)}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══ STOCK DETAIL ════════════════════════════
+async function openStockDetail(symbol) {
+  showPage('stock-detail');
+  document.getElementById('detail-symbol-input').value = symbol;
+  await analyzeStock(symbol);
+}
+
+async function analyzeFromSearch() {
+  const sym = document.getElementById('search-input').value.trim().toUpperCase();
+  if (!sym) return;
+  showPage('stock-detail');
+  document.getElementById('detail-symbol-input').value = sym;
+  await analyzeStock(sym);
+}
+
+async function analyzeStock(sym) {
+  const symbol = sym || document.getElementById('detail-symbol-input').value.trim().toUpperCase();
+  if (!symbol) return toast('Enter a stock symbol', 'error');
+
+  const container = document.getElementById('stock-detail-content');
+  document.getElementById('detail-empty').style.display = 'none';
+  container.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto"></div><p style="margin-top:16px;color:var(--muted)">Analyzing ' + symbol + '...</p></div>';
+
+  try {
+    const [stockRes, aiRes] = await Promise.allSettled([
+      fetch(`${API}/api/stock/${symbol}`),
+      fetch(`${API}/api/stock/${symbol}/ai-analysis`),
+    ]);
+
+    if (stockRes.status !== 'fulfilled' || !stockRes.value.ok) {
+      throw new Error(`Stock not found: ${symbol}`);
+    }
+    const r = await stockRes.value.json();
+
+    let aiBrief = r.ai_brief || null;
+    let aiStatusNote = '';
+    if (aiRes.status === 'fulfilled') {
+      if (aiRes.value.ok) {
+        const aiData = await aiRes.value.json();
+        aiBrief = aiData.ai_brief || aiBrief;
+      } else if (aiRes.value.status === 503) {
+        aiStatusNote = 'AI analysis is currently disabled (missing provider key).';
+      } else {
+        aiStatusNote = 'AI analysis is temporarily unavailable for this symbol.';
+      }
+    } else {
+      aiStatusNote = 'AI analysis request failed. Showing core quant analysis only.';
+    }
+
+    let aiBriefHtml = '<div style="color:var(--muted);font-size:13px">No AI brief available for this stock yet.</div>';
+    if (aiBrief) {
+      aiBriefHtml = aiBrief
+        .split(/\r?\n/)
+        .filter(Boolean)
+        .map(line => {
+          const idx = line.indexOf(':');
+          if (idx > -1) {
+            const key = escapeHTML(line.slice(0, idx + 1));
+            const value = escapeHTML(line.slice(idx + 1).trim());
+            return `<div style="margin-bottom:8px"><span style="color:var(--gold);font-weight:600">${key}</span> <span style="color:var(--text)">${value}</span></div>`;
+          }
+          return `<div style="margin-bottom:8px;color:var(--text)">${escapeHTML(line)}</div>`;
+        })
+        .join('');
+    }
+
+    const aiNoteHtml = aiStatusNote
+      ? `<div style="margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--ink3);color:var(--muted);font-size:12px">${escapeHTML(aiStatusNote)}</div>`
+      : '';
+
+    const techRules = r.technical_details || {};
+    const ruleChips = Object.entries(techRules).map(([k, v]) =>
+      `<span class="rule-chip ${v.passed ? 'pass' : 'fail'}">${v.passed ? '✓' : '✗'} ${v.desc}</span>`
+    ).join('');
+
+    const fundDetails = r.fundamental_details || {};
+    const fundScores = r.fundamental_scores || {};
+
+    container.innerHTML = `
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+        <div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:var(--text-bright)">${r.symbol}</span>
+            ${r.is_multibagger ? '<span class="badge badge-gold" style="font-size:12px;padding:6px 14px">🚀 MULTIBAGGER CANDIDATE</span>' : ''}
+          </div>
+          <div style="font-size:14px;color:var(--muted);margin-top:4px">${r.name || r.symbol} · ${r.sector || 'N/A'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'DM Mono',monospace;font-size:32px;font-weight:700;color:var(--text-bright)">₹${fmtNum(r.current_price)}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">
+            SL: <span style="color:var(--red)">₹${r.stop_loss}</span> · Target: <span style="color:var(--green)">₹${r.target}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Score Cards -->
+      <div class="three-col" style="margin-bottom:24px">
+        <div class="card" style="margin:0;text-align:center;padding:24px;">
+          <div class="score-circle ${scoreClass(r.composite_score, 20)}" style="margin:0 auto 8px">
+            ${r.composite_score.toFixed(1)} <small>/20</small>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">Composite Score</div>
+        </div>
+        <div class="card" style="margin:0;text-align:center;padding:24px;">
+          <div class="score-circle ${scoreClass(r.technical_score, 10)}" style="margin:0 auto 8px">
+            ${r.technical_score.toFixed(1)} <small>/10</small>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">Technical Score</div>
+        </div>
+        <div class="card" style="margin:0;text-align:center;padding:24px;">
+          <div class="score-circle ${scoreClass(r.fundamental_score, 10)}" style="margin:0 auto 8px">
+            ${r.fundamental_score.toFixed(1)} <small>/10</small>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">Fundamental Score</div>
+        </div>
+      </div>
+
+      <!-- AI Analysis -->
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header"><div class="card-title">AI Trade Analysis</div></div>
+        <div class="card-body">
+          <div style="font-size:13px;color:var(--text2);margin-bottom:10px;">Provider-generated brief based on current technical + fundamental snapshot.</div>
+          ${aiBriefHtml}
+          ${aiNoteHtml}
+        </div>
+      </div>
+
+      <!-- Technical Rules -->
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header"><div class="card-title">Technical Analysis Rules</div></div>
+        <div class="card-body">
+          <div class="rule-chips">${ruleChips}</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px;">
+            <div class="fund-item"><div class="label">RSI</div><div class="value" style="color:${r.rsi > 65 ? 'var(--red)' : r.rsi < 40 ? 'var(--green)' : 'var(--gold)'}">${fmtNum(r.rsi)}</div></div>
+            <div class="fund-item"><div class="label">MACD</div><div class="value" style="font-size:16px">${fmtNum(r.macd, 4)}</div></div>
+            <div class="fund-item"><div class="label">SMA 50</div><div class="value" style="font-size:16px">₹${fmtNum(r.sma_50)}</div></div>
+            <div class="fund-item"><div class="label">SMA 200</div><div class="value" style="font-size:16px">₹${fmtNum(r.sma_200)}</div></div>
+            <div class="fund-item"><div class="label">Vol Ratio</div><div class="value" style="font-size:16px">${fmtNum(r.volume_ratio)}x</div></div>
+            <div class="fund-item"><div class="label">BB Width</div><div class="value" style="font-size:16px">${fmtNum(r.bb_width, 3)}</div></div>
+            <div class="fund-item"><div class="label">ATR</div><div class="value" style="font-size:16px">₹${fmtNum(r.atr)}</div></div>
+            <div class="fund-item"><div class="label">R:R Ratio</div><div class="value" style="font-size:16px;color:var(--green)">${r.risk_reward}:1</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fundamental Analysis -->
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header"><div class="card-title">Fundamental Analysis</div></div>
+        <div class="card-body">
+          <div class="fund-grid">
+            <div class="fund-item">
+              <div class="label">Revenue Growth</div>
+              <div class="value" style="color:${parseFloat(fundDetails.revenue_growth) > 0 ? 'var(--green)' : 'var(--red)'}">${fundDetails.revenue_growth || 'N/A'}</div>
+              <div style="margin-top:4px">${scoreBarHTML(fundScores.revenue_growth || 0, 2)}</div>
+            </div>
+            <div class="fund-item">
+              <div class="label">Profit Margin</div>
+              <div class="value" style="color:var(--text-bright)">${fundDetails.profit_margin || 'N/A'}</div>
+              <div style="margin-top:4px">${scoreBarHTML(fundScores.profit_margin || 0, 1.5)}</div>
+            </div>
+            <div class="fund-item">
+              <div class="label">Return on Equity</div>
+              <div class="value" style="color:var(--green)">${fundDetails.roe || 'N/A'}</div>
+              <div style="margin-top:4px">${scoreBarHTML(fundScores.roe || 0, 2)}</div>
+            </div>
+            <div class="fund-item">
+              <div class="label">Debt / Equity</div>
+              <div class="value" style="color:var(--gold)">${fundDetails.debt_to_equity || 'N/A'}</div>
+              <div style="margin-top:4px">${scoreBarHTML(fundScores.low_debt || 0, 1.5)}</div>
+            </div>
+            <div class="fund-item">
+              <div class="label">PEG Ratio</div>
+              <div class="value" style="color:var(--blue)">${fundDetails.peg_ratio || 'N/A'}</div>
+              <div style="margin-top:4px">${scoreBarHTML(fundScores.peg_ratio || 0, 1.5)}</div>
+            </div>
+            <div class="fund-item">
+              <div class="label">Earnings Growth</div>
+              <div class="value" style="color:${parseFloat(fundDetails.earnings_growth) > 0 ? 'var(--green)' : 'var(--red)'}">${fundDetails.earnings_growth || 'N/A'}</div>
+              <div style="margin-top:4px">${scoreBarHTML(fundScores.earnings_growth || 0, 1.5)}</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px;">
+            <div class="fund-item"><div class="label">P/E Ratio</div><div class="value" style="font-size:16px">${fmtNum(r.pe_ratio)}</div></div>
+            <div class="fund-item"><div class="label">Market Cap</div><div class="value" style="font-size:16px">${fmtCr(r.market_cap)}</div></div>
+            <div class="fund-item"><div class="label">52W High</div><div class="value" style="font-size:16px">₹${fmtNum(r.fifty_two_week_high)}</div></div>
+            <div class="fund-item"><div class="label">52W Low</div><div class="value" style="font-size:16px">₹${fmtNum(r.fifty_two_week_low)}</div></div>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch (e) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">❌</div><h3>Error</h3><p>${e.message}</p></div>`;
+  }
+}
+
+// ═══ BACKTEST ════════════════════════════════
+async function runBacktest() {
+  const symbol = document.getElementById('bt-symbol').value.trim().toUpperCase();
+  const start = document.getElementById('bt-start').value;
+  const sl = parseFloat(document.getElementById('bt-sl').value) / 100;
+  const target = parseFloat(document.getElementById('bt-target').value) / 100;
+
+  if (!symbol) return toast('Enter a symbol', 'error');
+
+  showLoading('RUNNING BACKTEST...', `Testing ${symbol} from ${start} with ${(sl*100)}% SL and ${(target*100)}% target.`);
+  document.getElementById('bt-empty').style.display = 'none';
+
+  try {
+    const res = await fetch(`${API}/api/backtest/${symbol}?start=${start}&stop_loss=${sl}&target=${target}`);
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    const m = data.metrics || {};
+    const trades = data.trades || [];
+
+    const container = document.getElementById('backtest-results');
+    container.innerHTML = `
+      <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:24px">
+        <div class="stat-card ${m.win_rate >= 50 ? 'green' : 'red'}">
+          <div class="stat-label">Win Rate</div>
+          <div class="stat-value">${m.win_rate}%</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Total Trades</div>
+          <div class="stat-value">${m.total_trades}</div>
+        </div>
+        <div class="stat-card ${m.total_pnl >= 0 ? 'green' : 'red'}">
+          <div class="stat-label">Total P&L</div>
+          <div class="stat-value">₹${m.total_pnl?.toLocaleString()}</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-label">Sharpe Ratio</div>
+          <div class="stat-value">${m.sharpe_ratio}</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Max Drawdown</div>
+          <div class="stat-value">${m.max_drawdown_pct}%</div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Additional Metrics</div></div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="fund-item"><div class="label">Avg Return / Trade</div><div class="value" style="font-size:16px;color:${m.avg_return_pct >= 0 ? 'var(--green)' : 'var(--red)'}">${m.avg_return_pct}%</div></div>
+              <div class="fund-item"><div class="label">Profit Factor</div><div class="value" style="font-size:16px">${m.profit_factor}</div></div>
+              <div class="fund-item"><div class="label">Best Trade</div><div class="value" style="font-size:16px;color:var(--green)">${m.best_trade_pct}%</div></div>
+              <div class="fund-item"><div class="label">Worst Trade</div><div class="value" style="font-size:16px;color:var(--red)">${m.worst_trade_pct}%</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Period</div></div>
+          <div class="card-body">
+            <div class="fund-item" style="margin-bottom:12px"><div class="label">Test Period</div><div class="value" style="font-size:14px;color:var(--text)">${m.period || 'N/A'}</div></div>
+            <div class="fund-item"><div class="label">Symbol</div><div class="value">${m.symbol || symbol}</div></div>
+          </div>
+        </div>
+      </div>
+      ${trades.length ? `
+      <div class="card" style="margin-top:24px">
+        <div class="card-header"><div class="card-title">Trade Log (${trades.length} trades)</div></div>
+        <div style="overflow-x:auto;max-height:400px;overflow-y:auto">
+          <table class="data-table">
+            <thead><tr>
+              <th>#</th><th>Entry Date</th><th>Exit Date</th><th>Entry ₹</th><th>Exit ₹</th><th>Shares</th><th>P&L ₹</th><th>P&L %</th><th>Exit Reason</th>
+            </tr></thead>
+            <tbody>${trades.map((t, i) => `
+              <tr>
+                <td style="color:var(--muted)">${i+1}</td>
+                <td style="font-family:'DM Mono',monospace;font-size:12px">${t.entry_date}</td>
+                <td style="font-family:'DM Mono',monospace;font-size:12px">${t.exit_date}</td>
+                <td style="font-family:'DM Mono',monospace">₹${t.entry_price}</td>
+                <td style="font-family:'DM Mono',monospace">₹${t.exit_price}</td>
+                <td>${t.shares}</td>
+                <td style="color:${t.pnl >= 0 ? 'var(--green)' : 'var(--red)'};font-weight:600">₹${t.pnl.toLocaleString()}</td>
+                <td style="color:${t.pnl_pct >= 0 ? 'var(--green)' : 'var(--red)'}; font-family:'DM Mono',monospace">${t.pnl_pct}%</td>
+                <td><span class="badge ${t.exit_reason === 'target' ? 'badge-green' : 'badge-red'}">${t.exit_reason}</span></td>
+              </tr>
+            `).join('')}</tbody>
+          </table>
+        </div>
+      </div>` : ''}
+    `;
+    toast(`Backtest complete: ${m.total_trades} trades, ${m.win_rate}% win rate`, 'success');
+  } catch (e) {
+    document.getElementById('backtest-results').innerHTML = `<div class="empty-state"><div class="icon">❌</div><h3>Backtest Failed</h3><p>${e.message}</p></div>`;
+    toast(`Backtest error: ${e.message}`, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// ═══ SORT TABLE ══════════════════════════════
+function sortTable(field) {
+  if (sortField === field) sortDir *= -1;
+  else { sortField = field; sortDir = -1; }
+  allResults.sort((a, b) => {
+    const va = a[field] ?? -Infinity;
+    const vb = b[field] ?? -Infinity;
+    if (typeof va === 'string') return va.localeCompare(vb) * sortDir;
+    return (va - vb) * sortDir;
+  });
+  updateDashboard();
+  updateScreenerTable();
+}
+
+// ═══ EXPORT CSV ══════════════════════════════
+function exportCSV() {
+  if (!allResults.length) return toast('No data to export', 'error');
+  const headers = ['Symbol','Name','Sector','Price','Composite Score','Tech Score','Fund Score','RSI','P/E','ROE','Revenue Growth','Multibagger','SL','Target'];
+  const rows = allResults.map(r => [
+    r.symbol, r.name, r.sector, r.current_price, r.composite_score, r.technical_score, r.fundamental_score,
+    r.rsi, r.pe_ratio || '', r.roe ? (r.roe*100).toFixed(1)+'%' : '', r.revenue_growth ? (r.revenue_growth*100).toFixed(1)+'%' : '',
+    r.is_multibagger ? 'YES' : 'NO', r.stop_loss, r.target
+  ]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `quantedge_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV exported successfully', 'success');
+}
+
+// ═══ HEALTH CHECK ════════════════════════════
+async function checkHealth() {
+  try {
+    const res = await fetch(`${API}/api/health`);
+    if (res.ok) {
+      document.getElementById('status-dot').innerHTML = '● Connected';
+      document.getElementById('status-dot').style.color = 'var(--green)';
+    }
+  } catch {
+    document.getElementById('status-dot').innerHTML = '● Offline';
+    document.getElementById('status-dot').style.color = 'var(--red)';
+  }
+}
+
+// ─── Init ────────────────────────────────────
+checkHealth();
+setInterval(checkHealth, 30000);
+</script>
+</body>
+</html>
